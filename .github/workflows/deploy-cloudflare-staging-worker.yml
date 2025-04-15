@@ -1,0 +1,48 @@
+name: Deploy Cloudflare Worker (Staging)
+
+on:
+  push:
+    branches:
+      - staging
+    paths:
+      - index.js
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Create wrangler.toml
+        run: mv wrangler.staging.toml wrangler.toml
+
+      - name: Set account ID
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: wrangler.toml
+          key: account_id
+          value: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Set zone ID
+        uses: ciiiii/toml-editor@1.0.0
+        env:
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        if: env.CLOUDFLARE_ZONE_ID != null
+        with:
+          file: wrangler.toml
+          key: zone_id
+          value: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+
+      - name: Set GITHUB_USER
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: wrangler.toml
+          key: vars.GITHUB_USER
+          value: ${{ secrets.GH_USER }}
+
+      - name: Publish
+        uses: cloudflare/wrangler-action@1.3.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
