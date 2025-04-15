@@ -1,0 +1,8 @@
+name = "wp-github-release-api-staging"
+type = "javascript"
+workers_dev = true
+account_id = ""
+zone_id = ""
+BASE_PATH="/workers/release-api-staging"
+[vars]
+GITHUB_USER = ""
