@@ -43,6 +43,16 @@ async function handleRequest(event) {
 		data.latestRelease = await getLatestRelease(data);
 		data.release = data.version ? await getRelease(data) : data.latestRelease;
 	} catch (e) {
+		try {
+			if (data.isDownload) {
+				const r2Response = await fetchFromR2(data);
+				if (r2Response) {
+					return r2Response; // If found in R2, return the R2 response
+				}
+			}
+		} catch (e) {
+			return getErrorResponse(e.message, 404);
+		}
 		return getErrorResponse(e.message, 404);
 	}
 
@@ -62,6 +72,12 @@ async function handleRequest(event) {
 
 	// Force a download
 	if (data.isDownload) {
+		// Save the file to R2 for future fallback
+		try {
+			await saveToR2(payload.download);
+		} catch (error) {
+			console.error('Error saving to R2:', error);
+		}
 		return Response.redirect(payload.download, 302);
 	}
 
@@ -140,6 +156,83 @@ function getDataFromRequest(request) {
 		version
 	};
 
+}
+
+async function fetchFromR2(data) {
+    const r2Bucket = RELEASE_API_R2_BUCKET;
+	let r2Key = `${data.package}.zip`;
+	let object;
+	
+    try {
+
+		if(data.version){
+			r2Key = `${data.version}-${data.package}.zip`;
+			object = await r2Bucket.get(r2Key); 
+		}else{
+			// List, Filter and Sort the files in descending order by name
+			const listObjects = await r2Bucket.list();
+			const zipFiles = listObjects.objects.filter((file) => file.key.endsWith(`-${data.package}.zip`));
+            zipFiles.sort((a, b) => {
+                return b.key.localeCompare(a.key); 
+            });
+
+			if (zipFiles.length > 0) {
+				const latestFile = zipFiles[0];
+				object = await r2Bucket.get(latestFile.key); 
+
+				// Delete older versions (all but the latest 5)
+                for (let i = 5; i < zipFiles.length; i++) {
+                    await r2Bucket.delete(zipFiles[i].key);
+                }
+
+			}
+		}
+        
+        if (object) {
+            const r2Response = new Response(object.body, {
+				headers: { 
+                    "Content-Type": "application/zip",
+                    "Content-Disposition": `attachment; filename="${data.package}.zip"`
+                }
+
+            });
+            return r2Response;
+        }
+    } catch (error) {
+        throw new Error('Error fetching from R2');
+    }
+    
+    return null;
+}
+
+
+async function saveToR2(downloadUrl) {
+	const parsedUrl = new URL(downloadUrl); 
+  	const pathSegments = parsedUrl.pathname.split('/').filter(Boolean);
+	const version = pathSegments[pathSegments.length - 2];
+
+    const r2Bucket = RELEASE_API_R2_BUCKET;
+    const r2Key = `${version}-${pathSegments[pathSegments.length - 1]}`;
+
+    try {
+
+		// Check if the file already exists in the R2 bucket
+        const existingObject = await r2Bucket.get(r2Key);
+        if (existingObject) {
+            return; 
+        }
+		// Fetch the zip file
+		const dresponse = await fetch(downloadUrl);
+		if (dresponse.status !== 200) {
+			return;
+		}
+		const zipBlob = await dresponse.blob();
+		
+        await r2Bucket.put(r2Key, zipBlob, { httpMetadata: { contentType: 'application/zip' } });
+
+    } catch (error) {
+        console.error('Error saving to R2:', error);
+    }
 }
 
 /**
