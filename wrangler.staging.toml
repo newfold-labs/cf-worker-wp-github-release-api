@@ -1,8 +1,11 @@
 name = "wp-github-release-api-staging"
-type = "javascript"
+main = "index.js"
+compatibility_date = "2025-04-15"
 workers_dev = true
-account_id = ""
-zone_id = ""
-BASE_PATH="/workers/release-api-staging"
+
 [vars]
 GITHUB_USER = ""
+
+routes = [
+  "https://*hiive.cloud/workers/release-api-staging/*"
+]
