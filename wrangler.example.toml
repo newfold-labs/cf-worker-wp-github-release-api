@@ -6,3 +6,9 @@ zone_id = ""
 
 [vars]
 GITHUB_USER = ""
+GITHUB_TOKEN= ""
+
+[[r2_buckets]]
+bucket_name = ""
+binding = "RELEASE_API_R2_BUCKET"
+preview_bucket_name = "" // for local testing
