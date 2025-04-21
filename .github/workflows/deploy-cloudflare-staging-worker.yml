@@ -1,0 +1,49 @@
+name: Deploy Cloudflare Worker (Staging)
+
+on:
+  push:
+    branches:
+      - staging
+    paths:
+      - index.js
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Create wrangler.toml
+        run: mv wrangler.staging.toml wrangler.toml
+
+      - name: Set account ID
+        uses: jacobtomlinson/gha-find-replace@f1069b438f125e5395d84d1c6fd3b559a7880cb5
+        with:
+          find: '^account_id = ".*"$'
+          replace: 'account_id = "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"'
+          include: wrangler.toml
+          regex: true
+
+      - name: Set zone ID
+        uses: jacobtomlinson/gha-find-replace@f1069b438f125e5395d84d1c6fd3b559a7880cb5
+        with:
+          find: '^zone_id = ".*"$'
+          replace: 'zone_id = "${{ secrets.CLOUDFLARE_ZONE_ID }}"'
+          include: wrangler.toml
+          regex: true
+
+      - name: Set GITHUB_USER
+        uses: jacobtomlinson/gha-find-replace@f1069b438f125e5395d84d1c6fd3b559a7880cb5
+        with:
+          find: '^vars\.GITHUB_USER = ".*"$'
+          replace: 'vars.GITHUB_USER = "${{ secrets.GH_USER }}"'
+          include: wrangler.toml
+          regex: true
+
+      - name: Publish
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
