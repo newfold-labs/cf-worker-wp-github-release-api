@@ -14,7 +14,7 @@ async function handleRequest(event) {
 	const cacheKey = new Request(url.toString(), request);
 	const cache = caches.default;
 
-	// Check if response is in cache
+	// Check if response is in cache.
 	let response = await cache.match(cacheKey);
 
 	// If cached, return stored result
