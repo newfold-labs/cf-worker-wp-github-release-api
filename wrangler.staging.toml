@@ -11,3 +11,7 @@ GITHUB_USER = ""
 routes = [
   "https://*hiive.cloud/workers/release-api-staging/*"
 ]
+
+[[r2_buckets]]
+bucket_name = "nfd-github-release-api"
+binding = "RELEASE_API_R2_BUCKET"
