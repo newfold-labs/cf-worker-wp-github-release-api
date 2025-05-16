@@ -85,7 +85,7 @@ async function handleRequest(event) {
 	response = getResponse(payload);
 
 	// Set cache header
-	response.headers.append('Cache-Control', 's-maxage=180');
+	response.headers.append('Cache-Control', 's-maxage=3600');
 
 	// Cache response
 	event.waitUntil(cache.put(cacheKey, response.clone()));
