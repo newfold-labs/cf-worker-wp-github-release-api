@@ -85,7 +85,7 @@ async function handleRequest(event) {
 	response = getResponse(payload);
 
 	// Set cache header
-	response.headers.append('Cache-Control', 's-maxage=180');
+	response.headers.append('Cache-Control', 's-maxage=3600');
 
 	// Cache response
 	event.waitUntil(cache.put(cacheKey, response.clone()));
@@ -293,11 +293,11 @@ async function getLatestRelease(data) {
 
 	// Proxy error response
 	if (response.status !== 200) {
-		throw releases;
+		throw new Error(JSON.stringify(releases));
 	}
 
 	if (!releases || !Array.isArray(releases) || !releases.length) {
-		throw 'No releases available!';
+		throw new Error('No releases available!');
 	}
 
 	// Sort by date published
@@ -326,7 +326,7 @@ async function getLatestRelease(data) {
 	}
 
 	if(validReleases.length <= 0) {
-		throw 'No valid releases available!';
+		throw new Error('No valid releases available!');
 	}
 
 	return validReleases[0];
@@ -351,12 +351,12 @@ async function getRelease(data) {
 
 	// Proxy error response
 	if (response.status !== 200) {
-		throw release;
+		throw new Error(JSON.stringify(release));
 	}
 
 	// Release doesn't have a downloadable
 	if (!release.assets.length) {
-		throw `Release ${ data.version } doesn't have a release asset!`
+		throw new Error(`Release ${ data.version } doesn't have a release asset!`);
 	}
 
 	return release;

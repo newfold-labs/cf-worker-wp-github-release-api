@@ -13,13 +13,13 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Create wrangler.toml
         run: mv wrangler.staging.toml wrangler.toml
 
       - name: Set account ID
-        uses: jacobtomlinson/gha-find-replace@f1069b438f125e5395d84d1c6fd3b559a7880cb5
+        uses: jacobtomlinson/gha-find-replace@f1069b438f125e5395d84d1c6fd3b559a7880cb5 # v3.0.5
         with:
           find: '^account_id = ".*"$'
           replace: 'account_id = "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"'
@@ -27,7 +27,7 @@ jobs:
           regex: true
 
       - name: Set zone ID
-        uses: jacobtomlinson/gha-find-replace@f1069b438f125e5395d84d1c6fd3b559a7880cb5
+        uses: jacobtomlinson/gha-find-replace@f1069b438f125e5395d84d1c6fd3b559a7880cb5 # v3.0.5
         with:
           find: '^zone_id = ".*"$'
           replace: 'zone_id = "${{ secrets.CLOUDFLARE_ZONE_ID }}"'
@@ -35,7 +35,7 @@ jobs:
           regex: true
 
       - name: Set GITHUB_USER
-        uses: jacobtomlinson/gha-find-replace@f1069b438f125e5395d84d1c6fd3b559a7880cb5
+        uses: jacobtomlinson/gha-find-replace@f1069b438f125e5395d84d1c6fd3b559a7880cb5 # v3.0.5
         with:
           find: '^vars\.GITHUB_USER = ".*"$'
           replace: 'vars.GITHUB_USER = "${{ secrets.GH_USER }}"'
