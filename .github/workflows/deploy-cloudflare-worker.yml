@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - index.js
+  workflow_dispatch:
 
 jobs:
   deploy:

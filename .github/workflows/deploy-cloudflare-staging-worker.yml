@@ -6,6 +6,7 @@ on:
       - staging
     paths:
       - index.js
+  workflow_dispatch:
 
 jobs:
   deploy:
