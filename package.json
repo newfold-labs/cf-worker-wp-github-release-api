@@ -5,11 +5,14 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "format": "prettier --write '**/*.{js,css,json,md}'"
+    "format": "prettier --write '**/*.{js,css,json,md}'",
+    "start": "npx wrangler dev --env local",
+    "deploy:staging": "npx wrangler deploy --env staging"
   },
   "author": "Micah Wood",
   "license": "MIT",
   "devDependencies": {
-    "prettier": "^2.3.2"
+    "prettier": "^2.3.2",
+    "wrangler": "^4.15.2"
   }
 }
