@@ -9,3 +9,5 @@ worker/
 Cargo.lock
 *.log
 wrangler.toml
+.wrangler/
+.dev.vars
