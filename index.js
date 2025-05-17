@@ -106,8 +106,14 @@ function getDataFromRequest(request) {
 	const segments = url.pathname.split('/').filter((value) => !!value);
 
 	if (url.hostname === 'hiive.cloud') {
-		segments.shift(); // Remove /workers
-		segments.shift(); // Remove /release-api
+		// Remove /workers
+		if(segments[0].includes('workers')) {
+			segments.shift();
+		}
+		// Remove /release-api (or /release-api-staging)
+		if(segments[0].includes('release-api')) {	
+			segments.shift();
+		}
 	}
 
 	// Set entity type
