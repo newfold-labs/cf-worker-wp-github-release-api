@@ -1,14 +1,26 @@
 name = "wp-github-release-api"
-type = "javascript"
+main = "index.js"
+compatibility_date = "2025-04-15"
 workers_dev = true
 account_id = ""
-zone_id = ""
-
-[vars]
-GITHUB_USER = ""
-GITHUB_TOKEN= ""
+route = { pattern = "*hiive.cloud/workers/release-api/*", zone_id = "" }
 
 [[r2_buckets]]
-bucket_name = ""
 binding = "RELEASE_API_R2_BUCKET"
-preview_bucket_name = "" # for local testing
+bucket_name = "nfd-github-release-api"
+
+# Staging Environment
+[env.staging]
+name = "wp-github-release-api-staging"
+route = { pattern = "*hiive.cloud/workers/release-api-staging/*", zone_id = "" }
+
+[[env.staging.r2_buckets]]
+binding = "RELEASE_API_R2_BUCKET"
+bucket_name = "nfd-github-release-api-test"
+
+# Local development settings
+[env.local]
+[[env.local.r2_buckets]]
+binding = "RELEASE_API_R2_BUCKET"
+bucket_name = "nfd-github-release-api-test"
+preview_bucket_name = "nfd-github-release-api-test"
