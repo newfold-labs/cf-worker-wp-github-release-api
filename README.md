@@ -11,31 +11,38 @@ All data is fetched from GitHub directly and makes a few assumptions:
 ## Prerequisites
 
 - Install [Node and NPM](https://nodejs.org/en/download/).
-- Install the [Wrangler CLI](https://developers.cloudflare.com/workers/cli-wrangler/install-update) by running `npm 
-  i -g @cloudflare/wrangler`.
-- Run `wrangler login` to link the Wrangler CLI to your Cloudflare account.
 
-## Installation
+## Local Setup
 
-- Run `git clone git@github.com:bluehost/worker-wp-github-release-api.git` to clone the repository.
+- Run `git clone git@github.com:newfold-labs/cf-worker-wp-github-release-api.git` to clone the repository.
+- Run `npm install`
 - Run `cp wrangler.example.toml wrangler.toml` to create your own `wrangler.toml` file.
-- Run `wrangler whoami` to get your Cloudflare Account ID.
+- Run `npx wrangler whoami` to get your Cloudflare Account ID. You may have to run `npx wrangler login` first.
 - Set your Cloudflare Account ID as `account_id` in the `wrangler.toml` file.
-- Set your GitHub username as `GITHUB_USER` in the `wrangler.toml` file.
-- Run `wrangler publish` to deploy the Worker to Cloudflare.
-- Create a [personal access token](https://github.com/settings/tokens) on GitHub (don't set an expiration and only
-  check the `repo` permissions).
+- Set your Cloudflare Zone ID as `zone_id` in the `wrangler.toml` file (multiple locations).
+- Create a `.dev.vars` file and set your GitHub username and token as `GITHUB_USER` and `GITHUB_TOKEN` in the file.
+- Run `npm start` to start the local dev environment.
+
+## Remote Setup
+
+- Run `wrangler secret put GITHUB_USER` to set your GitHub user as an environmental secret on Cloudflare.
 - Run `wrangler secret put GITHUB_TOKEN` to set your GitHub token as an environmental secret on Cloudflare.
 
-If you want to configure a custom route via the `wrangler.toml` file, you will need to provide your Cloudflare Zone 
-ID as `zone_id` in the `wrangler.toml` file.
+## Deployments
+
+### Production
+Any push to the `master` branch on your GitHub repo will trigger the `.github/workflows/deploy-cloudflare-worker.yml` 
+workflow via GitHub Actions and deploy your Worker to Cloudflare automatically.
+
+### Staging
+Any push to the `staging` branch on your GitHub repo will trigger the `.github/workflows/deploy-cloudflare-staging-worker.yml` 
+workflow via GitHub Actions and deploy your Worker to Cloudflare automatically.
+
+If you want to test code before pushing code to the `staging` branch, you can run `npm run deploy:staging`.
 
 ## Usage
 
-Once installed, you should be able to access the API at `https://wp-github-release-api.<your-subdomain>.workers.dev`.
-
-If you prefer to have the API live on a custom domain, follow the steps on setting up a [custom route](https://developers.cloudflare.com/workers/platform/routes) for your 
-Cloudflare Worker.
+You can access the production API at `https://hiive.cloud/workers/release-api` and the staging API at `https://hiive.cloud/workers/release-api-staging`
 
 Requests to the API use the following pattern: `/:entity/:vendor:/:package/[:version]/[download]`.
 
@@ -176,32 +183,3 @@ The example above would result in the following plugin basename: `shortcode-scru
   }
 }
 ```
-
-## How to Setup Automated Deployments *(only required if editing code)*
-
-- Install the [GitHub CLI](https://github.com/cli/cli#installation). Mac users can simply run `brew install gh` if
-  [Homebrew](https://brew.sh/) is installed.
-- [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) this repository into your own GitHub account.
-- Clone your new repository onto your local machine.
-- Run `npm install` from the project root to install dependencies.
-- Create an [API Token](https://dash.cloudflare.com/profile/api-tokens) on Cloudflare using the `Cloudflare Workers` 
-  template.
-- Run `gh secret set CLOUDFLARE_API_TOKEN` to set your Cloudflare API key as a secret on GitHub.
-- Run `wrangler whoami` to get your Cloudflare Account ID.
-- Run `gh secret set CLOUDFLARE_ACCOUNT_ID` to set your Cloudflare Account ID as a secret on GitHub.
-- Run `gh secret set GH_USER` to set your GitHub user as a secret on GitHub.
-- Optionally, set your Cloudflare Zone ID by running `gh secret set CLOUDFLARE_ZONE_ID`.
-- Run `wrangler publish` to deploy the Worker to Cloudflare. This must be done once initially so that the secret we 
-  set next has an existing Worker to be applied to.
-- Create a [personal access token](https://github.com/settings/tokens) on GitHub (don't set an expiration and only 
-  check the `repo` permissions).
-- Run `wrangler secret put GITHUB_TOKEN` to set your GitHub token as an environmental secret on Cloudflare.
-
-Any push to the `master` branch on your GitHub repo will trigger the `.github/workflows/deploy-cloudflare-worker.yml` 
-workflow via GitHub Actions and deploy your Worker to Cloudflare automatically. If you use a different default branch, 
-such as `main`, simply update the `deploy-cloudflare-worker.yml` file to reflect the correct branch name.
-
-## Additional Notes
-
-- If certain bits of data are missing from the response, it could be that you haven't added all of the necessary 
-  file headers.
