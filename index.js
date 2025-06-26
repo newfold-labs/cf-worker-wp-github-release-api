@@ -109,18 +109,13 @@ async function handleRequest(event) {
  */
 function getDataFromRequest(request) {
   const url = new URL(request.url)
-  const segments = url.pathname.split('/').filter((value) => !!value)
 
-  if (url.hostname === 'hiive.cloud') {
-    // Remove /workers
-    if (segments[0].includes('workers')) {
-      segments.shift()
-    }
-    // Remove /release-api (or /release-api-staging)
-    if (segments[0].includes('release-api')) {
-      segments.shift()
-    }
-  }
+  const cleanPath = url.pathname
+    .replace(/^\/?workers/, '') // Remove /workers
+    .replace(/^\/?release-api(-staging)?/, '') // Remove /release-api and /release-api-staging
+    .replace(/^\/+/g, '') // Trim leading slashes
+
+  const segments = cleanPath.split('/').filter((value) => !!value)
 
   // Set entity type
   let type = segments.shift()
