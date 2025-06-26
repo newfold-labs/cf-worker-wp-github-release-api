@@ -10,11 +10,8 @@ async function handleRequest(event) {
 	const request = event.request;
 	const url = new URL(request.url);
 
-	// Construct the cache key from the cache URL, omitting sensitive headers
-	const cacheKey = new Request(url.toString(), {
-		method: request.method,
-		// Do not include Authorization or other sensitive headers
-	});
+	// Construct the cache key from the cache URL, omitting headers, which are variable (referrer includes the site URL)
+	const cacheKey = new Request(url.toString());
 	
 	// Use a private cache namespace
 	const cache = await caches.open('wp-github-release-api');
