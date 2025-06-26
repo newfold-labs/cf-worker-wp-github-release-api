@@ -81,7 +81,7 @@ async function handleRequest(event) {
   if (data.isDownload) {
     // Save the file to R2 for future fallback
     try {
-      await saveToR2(payload.download)
+      await saveToR2(data, payload.download)
     } catch (error) {
       console.error('Error saving to R2:', error)
     }
@@ -179,7 +179,7 @@ async function fetchFromR2(data) {
       // List, Filter and Sort the files in descending order by name
       const listObjects = await r2Bucket.list()
       const zipFiles = listObjects.objects.filter((file) =>
-        file.key.endsWith(`-${data.package}.zip`),
+        file.key.endsWith(getR2KeyEnd(data)),
       )
       zipFiles.sort((a, b) => {
         return b.key.localeCompare(a.key)
@@ -212,13 +212,13 @@ async function fetchFromR2(data) {
   return null
 }
 
-async function saveToR2(downloadUrl) {
+async function saveToR2(data, downloadUrl) {
   const parsedUrl = new URL(downloadUrl)
   const pathSegments = parsedUrl.pathname.split('/').filter(Boolean)
   const version = pathSegments[pathSegments.length - 2]
 
   const r2Bucket = RELEASE_API_R2_BUCKET
-  const r2Key = `${version}-${pathSegments[pathSegments.length - 1]}`
+  const r2Key = getFullR2Key(data, version);
 
   try {
     // Check if the file already exists in the R2 bucket
@@ -239,6 +239,15 @@ async function saveToR2(downloadUrl) {
   } catch (error) {
     console.error('Error saving to R2:', error)
   }
+}
+
+// For putting.
+function getFullR2Key(data, version) {
+  return `${version}-${getR2KeyEnd(data)}`
+}
+// For filtering.
+function getR2KeyEnd(data) {
+  return `-${data.package}.zip`
 }
 
 /**
