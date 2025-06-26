@@ -23,7 +23,7 @@ binding = "RELEASE_API_R2_BUCKET"
 bucket_name = "nfd-github-release-api-test"
 
 [[env.staging.kv_namespaces]]
-binding = "wp_github_release_api_staging"
+binding = "RELEASE_API_KV_STORE"
 id = "d38d526a19814510aa64db2e9ce2990c"
 
 # Local development settings
@@ -34,5 +34,5 @@ bucket_name = "nfd-github-release-api-test"
 preview_bucket_name = "nfd-github-release-api-test"
 
 [[env.local.kv_namespaces]]
-binding = "wp_github_release_api_staging"
+binding = "RELEASE_API_KV_STORE"
 id = "d38d526a19814510aa64db2e9ce2990c"
