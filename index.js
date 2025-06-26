@@ -47,7 +47,7 @@ async function handleRequest(event) {
 
   // Get the release
   try {
-    data.latestRelease = await getLatestRelease(data)
+    data.latestRelease = await getLatestReleaseDetailJsonFromGitHub(data)
     data.release = data.version ? await getRelease(data) : data.latestRelease
   } catch (e) {
     try {
@@ -302,7 +302,7 @@ function getPayload(data) {
  *
  * @returns {Promise<*>}
  */
-async function getLatestRelease(data) {
+async function getLatestReleaseDetailJsonFromGitHub(data) {
   let release, releases, response
 
   // Fetch the most recent releases from GitHub
