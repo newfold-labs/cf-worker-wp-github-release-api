@@ -1,25 +1,42 @@
+import { getKV, setKV } from './src/kv'
+
+export default {
+  async fetch(request, env, ctx) {
+    return handleRequest(request, env, ctx)
+  },
+}
+
 /**
  * Handle the incoming request.
  *
- * @param event {Event}
  *
  * @returns {Promise<Response>}
  */
-async function handleRequest(event) {
-  const request = event.request
+// async function handleRequest(event) {
+async function handleRequest(request, env, ctx) {
+  // const request = event.request
   const url = new URL(request.url)
 
   // Construct the cache key from the cache URL, omitting headers, which are variable (referrer includes the site URL)
-  const cacheKey = new Request(url.toString())
+  const cacheKey = url
 
   // Use a private cache namespace
   const cache = await caches.open('wp-github-release-api')
 
   // Check if response is in cache
+  // let response = await cache.match(cacheKey)
+  // let response = await ctx.waitUntil(cache.match(cacheKey))
   let response = await cache.match(cacheKey)
+
+  if(response) {
+    console.log(`Cache hit for URL: ${cacheKey}`)
+  } else {
+    console.log(`Cache miss for URL: ${cacheKey}`)
+  }
 
   // If cached, return stored result
   if (response) {
+    console.log(`Returning cached response.`)
     return response
   }
 
@@ -45,26 +62,32 @@ async function handleRequest(event) {
     )
   }
 
+  const cachedData = await getKV(env, url.pathname)
+  if (cachedData && data.isDownload && cachedData.latestRelease && cachedData.latestRelease.tag_name) {
+    console.log(`Found KV cached data for ${url.pathname}`)
+    const version = cachedData.latestRelease.tag_name
+    const r2Response = await fetchSavedFromR2(env, data, version)
+    if (r2Response) {
+      console.log(`Caching R2 response object with key: ${cacheKey}`)
+      await cache.put(cacheKey, r2Response.clone());
+
+      console.log('Returning R2 response')
+      return r2Response // If found in R2, return the R2 response
+    }
+  } else {
+    console.log(`No KV cached data for ${url.pathname}`)
+  }
+
   // Get the release
   try {
-    data.latestRelease = await getLatestReleaseDetailJsonFromGitHub(data)
-    data.release = data.version ? await getRelease(data) : data.latestRelease
+    data.latestRelease = await getLatestReleaseDetailJsonFromGitHub(env, data)
+    data.release = data.version ? await getRelease(env, data) : data.latestRelease
   } catch (e) {
-    try {
-      if (data.isDownload) {
-        const r2Response = await fetchFromR2(data)
-        if (r2Response) {
-          return r2Response // If found in R2, return the R2 response
-        }
-      }
-    } catch (e) {
-      return getErrorResponse(e.message, 404)
-    }
     return getErrorResponse(e.message, 404)
   }
 
   const filePath = `https://raw.githubusercontent.com/${data.vendor}/${data.package}/${data.release.tag_name}/${data.file}`
-  response = await gitHubRequest(filePath)
+  response = await gitHubRequest(env, filePath)
 
   // Unable to read base file
   if (response.status !== 200) {
@@ -77,11 +100,30 @@ async function handleRequest(event) {
   // Get payload
   const payload = getPayload(data)
 
+  console.log(`KV Caching data object for ${url.pathname}`)
+  await setKV(env, url.pathname, data)
+
+  // const testKv = await getKV(env, url.pathname)
+  // console.log(`KV Cached data object: ${JSON.stringify(testKv)}`)
+
   // Force a download
   if (data.isDownload) {
     // Save the file to R2 for future fallback
     try {
-      await saveToR2(data, payload.download)
+      const version = data.latestRelease.tag_name
+      await saveToR2(env, data, version, payload.download)
+      const r2Response = await fetchSavedFromR2(
+        env,
+        data,
+        data.latestRelease.tag_name,
+      )
+      if (r2Response) {
+        console.log('Found in R2')
+        console.log(`Caching R2 response object with key: ${cacheKey}`)
+        await cache.put(cacheKey, r2Response.clone());
+        console.log('Returning response')
+        return r2Response // If found in R2, return the R2 response
+      }
     } catch (error) {
       console.error('Error saving to R2:', error)
     }
@@ -92,10 +134,11 @@ async function handleRequest(event) {
   response = getResponse(payload)
 
   // Set cache header
+  // "shared max-age"
   response.headers.append('Cache-Control', 's-maxage=3600')
 
   // Cache response
-  event.waitUntil(cache.put(cacheKey, response.clone()))
+  await cache.put(cacheKey, response.clone())
 
   // Return response to the user
   return response
@@ -166,74 +209,51 @@ function getDataFromRequest(request) {
   }
 }
 
-async function fetchFromR2(data) {
-  const r2Bucket = RELEASE_API_R2_BUCKET
+async function fetchSavedFromR2(env, data, version) {
+  // const r2Bucket = getR2Bucket()
   let r2Key = `${data.package}.zip`
   let object
 
   try {
-    if (data.version) {
-      r2Key = `${data.version}-${data.package}.zip`
-      object = await r2Bucket.get(r2Key)
-    } else {
-      // List, Filter and Sort the files in descending order by name
-      const listObjects = await r2Bucket.list()
-      const zipFiles = listObjects.objects.filter((file) =>
-        file.key.endsWith(getR2KeyEnd(data)),
-      )
-      zipFiles.sort((a, b) => {
-        return b.key.localeCompare(a.key)
-      })
-
-      if (zipFiles.length > 0) {
-        const latestFile = zipFiles[0]
-        object = await r2Bucket.get(latestFile.key)
-
-        // Delete older versions (all but the latest 5)
-        for (let i = 5; i < zipFiles.length; i++) {
-          await r2Bucket.delete(zipFiles[i].key)
-        }
-      }
-    }
+    r2Key = getFullR2Key(data, version)
+    object = await env.RELEASE_API_R2_BUCKET.get(r2Key)
 
     if (object) {
-      const r2Response = new Response(object.body, {
+
+      return new Response(object.body, {
         headers: {
           'Content-Type': 'application/zip',
-          'Content-Disposition': `attachment; filename="${data.package}.zip"`,
+          'Content-Disposition': `attachment; filename="${data.package}.${version}.zip"`,
         },
       })
-      return r2Response
     }
   } catch (error) {
-    throw new Error('Error fetching from R2')
+    throw new Error(`Error fetching from R2 ${error.message}`)
   }
 
   return null
 }
 
-async function saveToR2(data, downloadUrl) {
-  const parsedUrl = new URL(downloadUrl)
-  const pathSegments = parsedUrl.pathname.split('/').filter(Boolean)
-  const version = pathSegments[pathSegments.length - 2]
+async function saveToR2(env, data, version, downloadUrl) {
+  const r2Key = getFullR2Key(data, version)
 
-  const r2Bucket = RELEASE_API_R2_BUCKET
-  const r2Key = getFullR2Key(data, version);
+  console.log(`Saving to R2: ${r2Key}, downloadUrl: ${downloadUrl}`)
 
   try {
     // Check if the file already exists in the R2 bucket
-    const existingObject = await r2Bucket.get(r2Key)
-    if (existingObject) {
+    if (await fetchSavedFromR2(env, data, version)) {
+      console.log(`File already exists in R2; no need to save: ${r2Key}`)
       return
     }
     // Fetch the zip file
-    const dresponse = await fetch(downloadUrl)
-    if (dresponse.status !== 200) {
+    const downloadResponse = await fetch(downloadUrl)
+    if (downloadResponse.status !== 200) {
       return
     }
-    const zipBlob = await dresponse.blob()
+    const responseClone = downloadResponse.clone()
+    const zipBlob = await responseClone.blob()
 
-    await r2Bucket.put(r2Key, zipBlob, {
+    await env.RELEASE_API_R2_BUCKET.put(r2Key, zipBlob, {
       httpMetadata: { contentType: 'application/zip' },
     })
   } catch (error) {
@@ -241,13 +261,8 @@ async function saveToR2(data, downloadUrl) {
   }
 }
 
-// For putting.
 function getFullR2Key(data, version) {
-  return `${version}-${getR2KeyEnd(data)}`
-}
-// For filtering.
-function getR2KeyEnd(data) {
-  return `-${data.package}.zip`
+  return `${version}-${data.package}.zip`
 }
 
 /**
@@ -302,11 +317,12 @@ function getPayload(data) {
  *
  * @returns {Promise<*>}
  */
-async function getLatestReleaseDetailJsonFromGitHub(data) {
+async function getLatestReleaseDetailJsonFromGitHub(env, data) {
   let release, releases, response
 
   // Fetch the most recent releases from GitHub
   response = await gitHubRequest(
+    env,
     `https://api.github.com/repos/${data.vendor}/${data.package}/releases`,
   )
   releases = await response.json()
@@ -357,15 +373,17 @@ async function getLatestReleaseDetailJsonFromGitHub(data) {
 /**
  * Get a specific plugin or theme release.
  *
+ * @param env
  * @param data {{}}
  *
  * @returns {Promise<*>}
  */
-async function getRelease(data) {
-  let release, releases, response
+async function getRelease(env, data) {
+  let release, response
 
   // Fetch a specific release from GitHub
   response = await gitHubRequest(
+    env,
     `https://api.github.com/repos/${data.vendor}/${data.package}/releases/tags/${data.version}`,
   )
   release = await response.json()
@@ -433,16 +451,17 @@ function getErrorResponse(message, statusCode = 400) {
 /**
  * Make a request to GitHub.
  *
+ * @param env
  * @param url {string}
  *
  * @returns {Promise<Response>}
  */
-async function gitHubRequest(url) {
+async function gitHubRequest(env, url) {
   return await fetch(url, {
     method: 'GET',
     headers: {
       Accept: 'application/vnd.github.v3+json',
-      Authorization: 'Basic ' + btoa(`${GITHUB_USER}:${GITHUB_TOKEN}`),
+      Authorization: 'Basic ' + btoa(`${env.GITHUB_USER}:${env.GITHUB_TOKEN}`),
       'User-Agent': 'Cloudflare Workers',
     },
   })
@@ -485,11 +504,3 @@ function getFileHeaders(fileContents) {
 
   return fileHeaders
 }
-
-addEventListener('fetch', (event) => {
-  event.respondWith(
-    handleRequest(event).catch(
-      (err) => new Response(err.stack, { status: 500 }),
-    ),
-  )
-})
