@@ -223,7 +223,7 @@ async function fetchSavedFromR2(env, data, version) {
       return new Response(object.body, {
         headers: {
           'Content-Type': 'application/zip',
-          'Content-Disposition': `attachment; filename="${data.package}.${version}.zip"`,
+          'Content-Disposition': `attachment; filename="${data.slug}.zip"`,
         },
       })
     }
