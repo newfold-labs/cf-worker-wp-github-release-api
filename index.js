@@ -28,7 +28,7 @@ async function handleRequest(request, env, ctx) {
   // let response = await ctx.waitUntil(cache.match(cacheKey))
   let response = await cache.match(cacheKey)
 
-  if(response) {
+  if (response) {
     console.log(`Cache hit for URL: ${cacheKey}`)
   } else {
     console.log(`Cache miss for URL: ${cacheKey}`)
@@ -63,13 +63,18 @@ async function handleRequest(request, env, ctx) {
   }
 
   const cachedData = await getKV(env, url.pathname)
-  if (cachedData && data.isDownload && cachedData.latestRelease && cachedData.latestRelease.tag_name) {
+  if (
+    cachedData &&
+    data.isDownload &&
+    cachedData.latestRelease &&
+    cachedData.latestRelease.tag_name
+  ) {
     console.log(`Found KV cached data for ${url.pathname}`)
     const version = cachedData.latestRelease.tag_name
     const r2Response = await fetchSavedFromR2(env, data, version)
     if (r2Response) {
       console.log(`Caching R2 response object with key: ${cacheKey}`)
-      await cache.put(cacheKey, r2Response.clone());
+      await cache.put(cacheKey, r2Response.clone())
 
       console.log('Returning R2 response')
       return r2Response // If found in R2, return the R2 response
@@ -81,7 +86,9 @@ async function handleRequest(request, env, ctx) {
   // Get the release
   try {
     data.latestRelease = await getLatestReleaseDetailJsonFromGitHub(env, data)
-    data.release = data.version ? await getRelease(env, data) : data.latestRelease
+    data.release = data.version
+      ? await getRelease(env, data)
+      : data.latestRelease
   } catch (e) {
     return getErrorResponse(e.message, 404)
   }
@@ -120,7 +127,7 @@ async function handleRequest(request, env, ctx) {
       if (r2Response) {
         console.log('Found in R2')
         console.log(`Caching R2 response object with key: ${cacheKey}`)
-        await cache.put(cacheKey, r2Response.clone());
+        await cache.put(cacheKey, r2Response.clone())
         console.log('Returning response')
         return r2Response // If found in R2, return the R2 response
       }
@@ -219,7 +226,6 @@ async function fetchSavedFromR2(env, data, version) {
     object = await env.RELEASE_API_R2_BUCKET.get(r2Key)
 
     if (object) {
-
       return new Response(object.body, {
         headers: {
           'Content-Type': 'application/zip',
