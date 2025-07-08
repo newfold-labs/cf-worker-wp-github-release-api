@@ -14,12 +14,12 @@ All data is fetched from GitHub directly and makes a few assumptions:
 
 ## Local Setup
 
-- Run `git clone git@github.com:newfold-labs/cf-worker-wp-github-release-api.git` to clone the repository.
+- Run `git clone git@github.com:newfold-labs/cf-worker-wp-github-release-api.git && cd cf-worker-wp-github-release-api` to clone the repository.
 - Run `npm install`
 - Run `cp wrangler.example.toml wrangler.toml` to create your own `wrangler.toml` file.
 - Run `npx wrangler whoami` to get your Cloudflare Account ID. You may have to run `npx wrangler login` first.
 - Set your Cloudflare Account ID as `account_id` in the `wrangler.toml` file.
-- Set your Cloudflare Zone ID as `zone_id` in the `wrangler.toml` file (multiple locations).
+- Set your Cloudflare Zone ID as `zone_id` in the `wrangler.toml` file (multiple locations). (from the [Cloudflare dashboard](https://dash.cloudflare.com/c4f7bad5175d528a61d7c185a1867996/hiive.cloud), under "API Tokens")
 - Create a `.dev.vars` file and set your GitHub username and token as `GITHUB_USER` and `GITHUB_TOKEN` in the file.
 - Run `npm start` to start the local dev environment.
 
