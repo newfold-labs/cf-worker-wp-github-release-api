@@ -262,7 +262,7 @@ async function saveToR2(env, data, version, downloadUrl) {
 }
 
 function getFullR2Key(data, version) {
-  return `${version}-${data.package}.zip`
+  return `${data.package}.${version}.zip`
 }
 
 /**
