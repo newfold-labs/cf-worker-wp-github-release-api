@@ -100,7 +100,7 @@ async function handleRequest(request, env, ctx) {
   // Get payload
   const payload = getPayload(data)
 
-  console.log(`KV Caching data object for ${url.pathname}`)
+  console.log(`Adding data object to KV cache for ${url.pathname}`)
   await setKV(env, url.pathname, data)
 
   // const testKv = await getKV(env, url.pathname)
