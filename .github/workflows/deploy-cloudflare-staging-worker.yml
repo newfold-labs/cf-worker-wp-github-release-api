@@ -16,7 +16,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: read # Required to clone the repo.
+      contents: read # Required to checkout the repo.
     timeout-minutes: 10
     steps:
 
