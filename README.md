@@ -14,12 +14,12 @@ All data is fetched from GitHub directly and makes a few assumptions:
 
 ## Local Setup
 
-- Run `git clone git@github.com:newfold-labs/cf-worker-wp-github-release-api.git` to clone the repository.
+- Run `git clone git@github.com:newfold-labs/cf-worker-wp-github-release-api.git && cd cf-worker-wp-github-release-api` to clone the repository.
 - Run `npm install`
 - Run `cp wrangler.example.toml wrangler.toml` to create your own `wrangler.toml` file.
 - Run `npx wrangler whoami` to get your Cloudflare Account ID. You may have to run `npx wrangler login` first.
 - Set your Cloudflare Account ID as `account_id` in the `wrangler.toml` file.
-- Set your Cloudflare Zone ID as `zone_id` in the `wrangler.toml` file (multiple locations).
+- Set your Cloudflare Zone ID as `zone_id` in the `wrangler.toml` file (multiple locations). (from the [Cloudflare dashboard](https://dash.cloudflare.com/c4f7bad5175d528a61d7c185a1867996/hiive.cloud), under "API Tokens")
 - Create a `.dev.vars` file and set your GitHub username and token as `GITHUB_USER` and `GITHUB_TOKEN` in the file.
 - Run `npm start` to start the local dev environment.
 
@@ -31,11 +31,13 @@ All data is fetched from GitHub directly and makes a few assumptions:
 ## Deployments
 
 ### Production
-Any push to the `master` branch on your GitHub repo will trigger the `.github/workflows/deploy-cloudflare-worker.yml` 
+
+Any push to the `master` branch on your GitHub repo will trigger the `.github/workflows/deploy-cloudflare-worker.yml`
 workflow via GitHub Actions and deploy your Worker to Cloudflare automatically.
 
 ### Staging
-Any push to the `staging` branch on your GitHub repo will trigger the `.github/workflows/deploy-cloudflare-staging-worker.yml` 
+
+Any push to the `staging` branch on your GitHub repo will trigger the `.github/workflows/deploy-cloudflare-staging-worker.yml`
 workflow via GitHub Actions and deploy your Worker to Cloudflare automatically.
 
 If you want to test code before pushing code to the `staging` branch, you can run `npm run deploy:staging`.
@@ -47,6 +49,7 @@ You can access the production API at `https://hiive.cloud/workers/release-api` a
 Requests to the API use the following pattern: `/:entity/:vendor:/:package/[:version]/[download]`.
 
 **Plugin Requests**
+
 ```shell
 # Get plugin info for latest version
 /plugins/:vendor/:package
@@ -62,6 +65,7 @@ Requests to the API use the following pattern: `/:entity/:vendor:/:package/[:ver
 ```
 
 **Theme Requests**
+
 ```shell
 # Get theme info for latest version
 /themes/:vendor/:package
@@ -84,20 +88,21 @@ Required path parameters:
 
 Optional path parameters:
 
-- **version** - The plugin or theme version number. When absent, the latest version will be returned. When present, 
+- **version** - The plugin or theme version number. When absent, the latest version will be returned. When present,
   the requested version will be returned.
 - **download** - When appended to the URL path, this will trigger a download of the plugin or theme `.zip` file.
 
 Optional query parameters:
 
-- **slug** - The folder name of the plugin or theme. Allows you to override your plugin or theme slug if it is 
+- **slug** - The folder name of the plugin or theme. Allows you to override your plugin or theme slug if it is
   different from the package name.
-- **file** - The file containing the WordPress plugin headers. Only required for plugin requests, this allows you to 
+- **file** - The file containing the WordPress plugin headers. Only required for plugin requests, this allows you to
   override the main plugin file name if it doesn't match the expected pattern: `{package}.php`.
 
 ### Plugin Request Example
 
 #### Request
+
 ```shell
 /plugins/wpscholar-wp-plugins/shortcode-scrubber
 
@@ -106,17 +111,18 @@ Optional query parameters:
 /plugins/wpscholar-wp-plugins/shortcode-scrubber/1.0.3
 ```
 
-In this scenario, the plugin basename is assumed to be `shortcode-scrubber/shortcode-scrubber.php`. This is derived 
-from the provided `slug` and `file` query parameters, if provided. Otherwise, the slug is assumed to match the 
+In this scenario, the plugin basename is assumed to be `shortcode-scrubber/shortcode-scrubber.php`. This is derived
+from the provided `slug` and `file` query parameters, if provided. Otherwise, the slug is assumed to match the
 `package` name and the `file` is assumed to match the `{package}.php` pattern.
 
 ```text
 /plugins/wpscholar-wp-plugins/shortcode-scrubber?slug=shortcode-scrubber-pro&file=scrubber.php
 ```
 
-The example above would result in the following plugin basename: `shortcode-scrubber-pro/scrubber.php`. 
+The example above would result in the following plugin basename: `shortcode-scrubber-pro/scrubber.php`.
 
 #### Response
+
 ```json
 {
   "name": "Shortcode Scrubber",
@@ -148,6 +154,7 @@ The example above would result in the following plugin basename: `shortcode-scru
 ### Theme Request Example
 
 #### Request
+
 ```shell
 /themes/wpscholar/block-theme
 
@@ -157,6 +164,7 @@ The example above would result in the following plugin basename: `shortcode-scru
 ```
 
 #### Response
+
 ```json
 {
   "name": "Block Theme",

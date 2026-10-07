@@ -9,6 +9,10 @@ route = { pattern = "*hiive.cloud/workers/release-api/*", zone_id = "" }
 binding = "RELEASE_API_R2_BUCKET"
 bucket_name = "nfd-github-release-api"
 
+[[kv_namespaces]]
+binding = "RELEASE_API_KV_STORE"
+id = "48b3bd149d264fa3bb23018ec5bf6984"
+
 # Staging Environment
 [env.staging]
 name = "wp-github-release-api-staging"
@@ -18,9 +22,17 @@ route = { pattern = "*hiive.cloud/workers/release-api-staging/*", zone_id = "" }
 binding = "RELEASE_API_R2_BUCKET"
 bucket_name = "nfd-github-release-api-test"
 
+[[env.staging.kv_namespaces]]
+binding = "RELEASE_API_KV_STORE"
+id = "d38d526a19814510aa64db2e9ce2990c"
+
 # Local development settings
 [env.local]
 [[env.local.r2_buckets]]
 binding = "RELEASE_API_R2_BUCKET"
 bucket_name = "nfd-github-release-api-test"
 preview_bucket_name = "nfd-github-release-api-test"
+
+[[env.local.kv_namespaces]]
+binding = "RELEASE_API_KV_STORE"
+id = "d38d526a19814510aa64db2e9ce2990c"
